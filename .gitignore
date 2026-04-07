@@ -1,0 +1,12 @@
+__pycache__
+*.swp
+*.cue
+*.cue~
+*.flac
+*.wav
+*.ape
+*.wv
+*.mp3
+*.ogg
+*.opus
+*.back
