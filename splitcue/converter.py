@@ -14,7 +14,7 @@ import sys
 
 from subprocess import Popen, PIPE
 
-from mutagen import flac, MutagenError
+from mutagen import flac, id3, mp3, oggopus, oggvorbis, MutagenError
 
 from . import version
 from .checker import cue_to_seconds
@@ -77,7 +77,10 @@ class Track:
     def write_meta(self):
         exts = {'flac': '.flac', 'lame': '.mp3',
                 'opusenc': '.opus', 'oggenc': '.ogg'}
-        methods = {'flac': self._set_vorbis_meta}
+        methods = {'flac': self._set_vorbis_meta,
+                   'lame': self._set_mp3_meta,
+                   'oggenc': self._set_vorbis_meta,
+                   'opusenc': self._set_vorbis_meta}
         fname = f'{self.num}{exts.get(self.enc)}'
         if os.path.exists(fname):
             try:
@@ -97,8 +100,23 @@ class Track:
         except OSError:
             print(f'ERROR: {fname} cannot be renamed...')
 
+    def _set_mp3_meta(self, fname):
+        song = mp3.MP3(fname)
+        song['TPE1'] = id3.TPE1(encoding=3, text=[self.artist])
+        song['TALB'] = id3.TALB(encoding=3, text=[self.album])
+        song['TCON'] = id3.TCON(encoding=3, text=[self.genre])
+        song['TIT2'] = id3.TIT2(encoding=3, text=[self.title])
+        number = '{0}/{1}'.format(self.num, self.total)
+        song['TRCK'] = id3.TRCK(encoding=3, text=[number])
+        song['TDRC'] = id3.TDRC(encoding=3, text=[self.date])
+        song['COMM::XXX'] = id3.COMM(
+            encoding=3, lang='XXX', desc='', text=[self.commentary or version])
+        song.save(fname)
+
     def _set_vorbis_meta(self, fname):
-        act = {'flac': flac.FLAC}
+        act = {'flac': flac.FLAC,
+               'opusenc': oggopus.OggOpus,
+               'oggenc': oggvorbis.OggVorbis,}
         song = act[self.enc](fname)
         song['artist'] = self.artist
         song['album'] = self.album
@@ -128,7 +146,14 @@ class Track:
 
     def _set_enc_part(self, opts):
         fo = opts or '-8'
-        encs = {'flac': f'-o "cust ext=flac flac {fo} - -o %f"'}
+        oo = opts or ''
+        vo = opts or '-q 4'
+        mo = opts or '-V 0'
+        lame = f'-o "cust ext=mp3 lame {mo} --noreplaygain --lowpass -1 - %f"'
+        encs = {'flac': f'-o "cust ext=flac flac {fo} - -o %f"',
+                'lame': lame,
+                'oggenc': f'-o "cust ext=ogg oggenc {vo} - -o %f"',
+                'opusenc': f'-o "cust ext=opus opusenc {oo} - %f"'}
         return encs.get(self.enc)
 
     def _set_length(self, points):

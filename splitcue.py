@@ -42,6 +42,7 @@ if importlib.util.find_spec('charset_normalizer') is None:
     sys.exit(0)
 if importlib.util.find_spec('mutagen') is None:
     print('ERROR: python3-mutagen is not installed...')
+    sys.exit(0)
 if read_file(meta['cue'], meta) is None:
     print('ERROR: bad cue file...')
     sys.exit(0)
