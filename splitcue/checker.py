@@ -22,10 +22,10 @@ def print_report(res, fun):
     caps = ('genre:', 'year:', 'disc ID:', 'commentary:',
             'artist:', 'album:', 'cuesheet file:',
             'media file:', 'total length:', 'tracks:')
-    vals = (res.get('genre', 'unknown'),
-            res.get('date', 'unknown'),
-            res.get('disc ID', 'unknown'),
-            res.get('comment', 'none'),
+    vals = (res.get('genre'),
+            res.get('date'),
+            res.get('disc ID'),
+            res.get('comment'),
             res.get('album performer'),
             res.get('album'),
             os.path.basename(res.get('cue')),
@@ -33,9 +33,10 @@ def print_report(res, fun):
             fun(res.get('length')),
             str(len(res['tracks'])))
     for (caption, value) in zip(caps, vals):
-        print('{0}{1:>{2}}'.format(
-            caption, value,
-            max(map(len, caps)) + 2 - len(caption) + len(value)))
+        if value:
+            print('{0}{1:>{2}}'.format(
+                caption, value,
+                max(map(len, caps)) + 2 - len(caption) + len(value)))
 
 
 def check_index(timestamp):

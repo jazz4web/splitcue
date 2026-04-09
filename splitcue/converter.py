@@ -104,11 +104,13 @@ class Track:
         song = mp3.MP3(fname)
         song['TPE1'] = id3.TPE1(encoding=3, text=[self.artist])
         song['TALB'] = id3.TALB(encoding=3, text=[self.album])
-        song['TCON'] = id3.TCON(encoding=3, text=[self.genre])
+        if self.genre:
+            song['TCON'] = id3.TCON(encoding=3, text=[self.genre])
         song['TIT2'] = id3.TIT2(encoding=3, text=[self.title])
         number = '{0}/{1}'.format(self.num, self.total)
         song['TRCK'] = id3.TRCK(encoding=3, text=[number])
-        song['TDRC'] = id3.TDRC(encoding=3, text=[self.date])
+        if self.date:
+            song['TDRC'] = id3.TDRC(encoding=3, text=[self.date])
         song['COMM::XXX'] = id3.COMM(
             encoding=3, lang='XXX', desc='', text=[self.commentary or version])
         song.save(fname)
@@ -120,11 +122,13 @@ class Track:
         song = act[self.enc](fname)
         song['artist'] = self.artist
         song['album'] = self.album
-        song['genre'] = self.genre
+        if self.genre:
+            song['genre'] = self.genre
         song['title'] = self.title
         song['tracknumber'] = self.num
         song['tracktotal'] = str(self.total)
-        song['date'] = self.date
+        if self.date:
+            song['date'] = self.date
         song['comment'] = self.commentary or version
         song.save(fname)
 

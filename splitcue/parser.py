@@ -17,7 +17,7 @@ from charset_normalizer import from_path
 def extract_metadata(res):
     res['album performer'] = get_value(res['content'], r'^PERFORMER +(.+)')
     res['album'] = get_value(res['content'], r'^TITLE +(.+)')
-    res['genre'] = get_value(res['content'], r'REM GENRE +(.+)')
+    res['genre'] = get_value(res['content'], r'^REM GENRE +(.+)')
     res['disc ID'] = get_value(res['content'], r'^REM DISCID +(.+)')
     res['date'] = get_value(res['content'], r'^REM DATE +(.+)')
     res['comment'] = get_value(res['content'], r'^REM COMMENT +(.+)')
@@ -98,8 +98,10 @@ def get_files(res):
 def read_file(name, res):
     if o := from_path(name).best():
         l = []
-        for each in o.raw.decode(o.encoding).split('\n'):
+        for i, each in enumerate(o.raw.decode(o.encoding).split('\n')):
             s = each.rstrip()
+            if not i and s.startswith('\ufeff'):
+                s = s[1:]
             if s:
                 l.append(s)
         res['content'] = tuple(l)
@@ -121,7 +123,7 @@ def define_dec(res):
 
 
 def find_couple(filename, res):
-    medias = ('.wv', '.flac', '.ape', '.wav')
+    medias = ('.wav', '.flac', '.ape', '.wv')
     cues = ('.cue', '.cue~')
     res['couple'] = None
     if os.path.exists(filename):

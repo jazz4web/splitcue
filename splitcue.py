@@ -57,7 +57,7 @@ if meta.get('couple', None) is None:
 define_dec(meta)
 if meta['decoder'] != 'empty':
     if not check_dep(meta['decoder']):
-        print(f'ERROR: `{dec}` is not installed...')
+        print(f'ERROR: `{meta["decoder"]}` is not installed...')
         sys.exit(1)
 extract_metadata(meta)
 ch = check_cue(meta)
