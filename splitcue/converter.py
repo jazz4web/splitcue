@@ -14,7 +14,7 @@ import sys
 
 from subprocess import Popen, PIPE
 
-from mutagen import flac, id3, mp3, oggopus, oggvorbis, MutagenError
+from mutagen import flac, id3, mp3, mp4, oggopus, oggvorbis, MutagenError
 
 from . import version
 from .checker import cue_to_seconds
@@ -75,10 +75,11 @@ class Track:
             sys.exit(1)
 
     def write_meta(self):
-        exts = {'flac': '.flac', 'lame': '.mp3',
+        exts = {'flac': '.flac', 'lame': '.mp3', 'faac': '.m4a',
                 'opusenc': '.opus', 'oggenc': '.ogg'}
         methods = {'flac': self._set_vorbis_meta,
                    'lame': self._set_mp3_meta,
+                   'faac': self._set_mp4_meta,
                    'oggenc': self._set_vorbis_meta,
                    'opusenc': self._set_vorbis_meta}
         fname = f'{self.num}{exts.get(self.enc)}'
@@ -113,6 +114,19 @@ class Track:
             song['TDRC'] = id3.TDRC(encoding=3, text=[self.date])
         song['COMM::XXX'] = id3.COMM(
             encoding=3, lang='XXX', desc='', text=[self.commentary or version])
+        song.save(fname)
+
+    def _set_mp4_meta(self, fname):
+        song = mp4.MP4(fname)
+        song['\xa9ART'] = [self.artist]
+        song['\xa9alb'] = [self.album]
+        if self.genre:
+            song['\xa9gen'] = [self.genre]
+        song['\xa9nam'] = [self.title]
+        song['trkn'] = [(int(self.num), self.total)]
+        if self.date:
+            song['\xa9day'] = [self.date]
+        song['\xa9cmt'] = [self.commentary or version]
         song.save(fname)
 
     def _set_vorbis_meta(self, fname):
@@ -154,8 +168,10 @@ class Track:
         vo = opts or '-q 4'
         mo = opts or '-V 0'
         lame = f'-o "cust ext=mp3 lame {mo} --noreplaygain --lowpass -1 - %f"'
+        faac = f'-o "cust ext=m4a faac {oo} -v 0 -X -P -w -o %f -"'
         encs = {'flac': f'-o "cust ext=flac flac {fo} - -o %f"',
                 'lame': lame,
+                'faac': faac,
                 'oggenc': f'-o "cust ext=ogg oggenc {vo} - -o %f"',
                 'opusenc': f'-o "cust ext=opus opusenc {oo} - %f"'}
         return encs.get(self.enc)
