@@ -28,7 +28,7 @@ def extract_metadata(res):
 
 def get_tracks_meta(res):
     title = r'^ +TITLE +(.+)'
-    perf = r'^ +PERORMER +(.+)'
+    perf = r'^ +PERFORMER +(.+)'
     index0 = r'^ +INDEX 00 +(\d{2}:\d{2}:\d{2})'
     index1 = r'^ +INDEX 01 +(\d{2}:\d{2}:\d{2})'
     content, tracks = res['content'], res['tracks']
