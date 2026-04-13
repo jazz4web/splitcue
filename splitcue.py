@@ -37,8 +37,8 @@ for p in ('file', 'shntool', meta['encoder']):
 if detect_f_type(meta['cue']) != 'text/plain':
     print('ERROR: bad cue file...')
     sys.exit(1)
-if importlib.util.find_spec('charset_normalizer') is None:
-    print('ERROR: python3-charset-normalizer is not installed...')
+if importlib.util.find_spec('chardet') is None:
+    print('ERROR: python3-chardet is not installed...')
     sys.exit(1)
 if importlib.util.find_spec('mutagen') is None:
     print('ERROR: python3-mutagen is not installed...')

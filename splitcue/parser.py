@@ -11,7 +11,7 @@ contacts: avm4dev@yandex.ru
 import os
 import re
 
-from charset_normalizer import from_path
+from chardet import detect
 
 
 def extract_metadata(res):
@@ -96,16 +96,17 @@ def get_files(res):
 
 
 def read_file(name, res):
-    if o := from_path(name).best():
-        l = []
-        for i, each in enumerate(o.raw.decode(o.encoding).split('\n')):
-            s = each.rstrip()
-            if not i and s.startswith('\ufeff'):
-                s = s[1:]
-            if s:
-                l.append(s)
-        res['content'] = tuple(l)
-        return True
+    try:
+        with open(name, 'rb') as f:
+            enc = detect(f.read())['encoding']
+            f.seek(0)
+            l = [line.decode(enc).rstrip() for line in f]
+            if l[0].startswith('\ufeff'):
+                l[0] = l[0][1:]
+            res['content'] = tuple(l)
+            return True
+    except(OSError, ValueError):
+        return None
 
 
 def find_couple_b(filename, res):
