@@ -11,7 +11,7 @@ contacts: avm4dev@yandex.ru
 import argparse
 
 
-def parse_args(version):
+def parse_args(version, flac=False):
     args = argparse.ArgumentParser()
     args.add_argument(
         '-v', '--version', action='version', version=version)
@@ -40,6 +40,10 @@ def parse_args(version):
         dest='rename',
         default=False,
         help='rename tracks')
-    args.add_argument(
-        'cue_file', action='store', help='the cuesheet file name')
+    if not flac:
+        args.add_argument(
+            'cue_file', action='store', help='the cuesheet file name')
+    else:
+        args.add_argument(
+            'flac_file', action='store', help='the FLAC file name')
     return args.parse_args()

@@ -19,6 +19,7 @@ def print_report(res, fun):
                         for track in res['tracks']) + 2
     res['ablock'] = max(len(track.get('performer'))
                         for track in res['tracks']) + 2
+    cue = res.get('cue')
     caps = ('genre:', 'year:', 'disc ID:', 'commentary:',
             'artist:', 'album:', 'cuesheet file:',
             'media file:', 'total length:', 'tracks:')
@@ -28,7 +29,7 @@ def print_report(res, fun):
             res.get('comment'),
             res.get('album performer'),
             res.get('album'),
-            os.path.basename(res.get('cue')),
+            os.path.basename(cue) if cue else 'none',
             os.path.basename(res.get('couple')),
             fun(res.get('length')),
             str(len(res['tracks'])))

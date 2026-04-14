@@ -10,13 +10,13 @@ contacts: avm4dev@yandex.ru
 ===================================
 """
 
-import sys
 import importlib.util
+import sys
 
 from splitcue import version
-from splitcue.main import parse_args
 from splitcue.checker import check_couple, check_cue, print_report
 from splitcue.converter import Track
+from splitcue.main import parse_args
 from splitcue.parser import (
     define_dec, define_enc, extract_metadata,
     find_couple, find_couple_b, get_files, read_file)
