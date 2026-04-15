@@ -23,7 +23,6 @@ from splitcue.parser import (
 from splitcue.system import check_dep, detect_f_type
 
 
-print(version)
 args = parse_args(version)
 meta = dict()
 meta['encoder'] = define_enc(args)
@@ -72,7 +71,12 @@ if not cc[0]:
 print_report(meta, Track.seconds_to_string)
 for i in range(len(meta['tracks'])):
     t = Track(i, meta)
-    t.convert(args.gaps, args.enc_opts, meta.get('ablock'), meta.get('tblock'))
-    fname = t.write_meta()
-    if fname and args.rename:
-        t.rename(fname)
+    if args.show:
+        t.set_length(t._set_points(args.gaps))
+        t.pprint(meta.get('ablock'), meta.get('tblock'))
+    else:
+        t.convert(
+            args.gaps, args.enc_opts, meta.get('ablock'), meta.get('tblock'))
+        fname = t.write_meta()
+        if fname and args.rename:
+            t.rename(fname)

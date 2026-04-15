@@ -21,7 +21,6 @@ from splitcue.mutagen import extract_cue_sheet
 from splitcue.parser import define_enc, extract_metadata, find_couple_b
 from splitcue.system import check_dep
 
-print(version)
 args = parse_args(version, flac=True)
 meta = dict()
 meta['encoder'] = define_enc(args)
@@ -50,7 +49,12 @@ if not ch[0]:
 print_report(meta, Track.seconds_to_string)
 for i in range(len(meta['tracks'])):
     t = Track(i, meta)
-    t.convert(args.gaps, args.enc_opts, meta.get('ablock'), meta.get('tblock'))
-    fname = t.write_meta()
-    if fname and args.rename:
-        t.rename(fname)
+    if args.show:
+        t.set_length(t._set_points(args.gaps))
+        t.pprint(meta.get('ablock'), meta.get('tblock'))
+    else:
+        t.convert(
+            args.gaps, args.enc_opts, meta.get('ablock'), meta.get('tblock'))
+        fname = t.write_meta()
+        if fname and args.rename:
+            t.rename(fname)

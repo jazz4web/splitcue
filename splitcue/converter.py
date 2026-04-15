@@ -58,11 +58,8 @@ class Track:
 
     def convert(self, gaps, opts, ablock, tblock):
         points = self._set_points(gaps)
-        self._set_length(points)
-        print('{0}  {1}{2:>{4}}{3:>{5}}'.format(
-            self.num, self.artist, self.title, self.length,
-            ablock - len(self.artist) + len(self.title),
-            tblock - len(self.title) + len(self.length)))
+        self.set_length(points)
+        self.pprint(ablock, tblock)
         cmd = '{0} {1} "{2}"'.format(
             self._set_shn_part(gaps),
             self._set_enc_part(opts),
@@ -73,6 +70,35 @@ class Track:
         if p.returncode:
             print('ERROR: something bad happend')
             sys.exit(1)
+
+    def pprint(self, ablock, tblock):
+        print('{0}  {1}{2:>{4}}{3:>{5}}'.format(
+            self.num, self.artist, self.title, self.length,
+            ablock - len(self.artist) + len(self.title),
+            tblock - len(self.title) + len(self.length)))
+
+    def rename(self, fname):
+        ext = os.path.splitext(fname)[1]
+        artist = re.sub(r'[\\/|?<>*:]', '~', self.artist)
+        title = re.sub(r'[\\/|?<>*:]', '~', self.title)
+        new = f'{self.num} - {artist} - {title}{ext}'
+        try:
+            os.rename(fname, new)
+        except OSError:
+            print(f'ERROR: {fname} cannot be renamed...')
+
+    def set_length(self, points):
+        p = points.split('\n')
+        if self.first:
+            if len(p) == 1:
+                l = cue_to_seconds(p[0])
+            else:
+                l = cue_to_seconds(p[1]) - cue_to_seconds(p[0])
+        if self.last:
+            l = self.tlength - cue_to_seconds(p[0])
+        if not self.first and not self.last:
+            l = cue_to_seconds(p[1]) - cue_to_seconds(p[0])
+        self.length = self.seconds_to_string(l)
 
     def write_meta(self):
         exts = {'flac': '.flac', 'lame': '.mp3', 'faac': '.m4a',
@@ -90,16 +116,6 @@ class Track:
                 print(f'ERROR: {fname}: metadata cannot be written...')
             return fname
         return None
-
-    def rename(self, fname):
-        ext = os.path.splitext(fname)[1]
-        artist = re.sub(r'[\\/|?<>*:]', '~', self.artist)
-        title = re.sub(r'[\\/|?<>*:]', '~', self.title)
-        new = f'{self.num} - {artist} - {title}{ext}'
-        try:
-            os.rename(fname, new)
-        except OSError:
-            print(f'ERROR: {fname} cannot be renamed...')
 
     def _set_mp3_meta(self, fname):
         song = mp3.MP3(fname)
@@ -175,19 +191,6 @@ class Track:
                 'oggenc': f'-o "cust ext=ogg oggenc {vo} - -o %f"',
                 'opusenc': f'-o "cust ext=opus opusenc {oo} - %f"'}
         return encs.get(self.enc)
-
-    def _set_length(self, points):
-        p = points.split('\n')
-        if self.first:
-            if len(p) == 1:
-                l = cue_to_seconds(p[0])
-            else:
-                l = cue_to_seconds(p[1]) - cue_to_seconds(p[0])
-        if self.last:
-            l = self.tlength - cue_to_seconds(p[0])
-        if not self.first and not self.last:
-            l = cue_to_seconds(p[1]) - cue_to_seconds(p[0])
-        self.length = self.seconds_to_string(l)
 
     def _set_points(self, gaps):
         if gaps == 'split':
