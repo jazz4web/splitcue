@@ -65,3 +65,43 @@ def parse_args(version, flac=False):
         args.add_argument(
             'flac_file', action='store', help='the FLAC file name')
     return args.parse_args()
+
+
+def parse_cargs(version):
+    args = argparse.ArgumentParser(
+        prog='convcue',
+        description=DESC,
+        epilog='SPLITCUE was developed just for fun, it is free, use it...')
+    args.add_argument(
+        '-v', '--version', action='version', version=version)
+    args.add_argument(
+        '-i',
+        action='store',
+        dest='input_dir',
+        required=True,
+        help='input directory')
+    args.add_argument(
+        '-d',
+        action='store',
+        dest='output_dir',
+        required=True,
+        help='output directory')
+    args.add_argument(
+        '-m', '--mode',
+        action='store',
+        dest='media_type',
+        default='opus',
+        choices=('opus', 'vorbis', 'mp3', 'aac'),
+        help='the output media type, default is `opus`')
+    args.add_argument(
+        '-o', '--opts',
+        action='store',
+        dest='enc_opts',
+        help='control some options while encoding tracks')
+    args.add_argument(
+        '-p',
+        action='store_true',
+        dest='picture',
+        default=False,
+        help='get the picture if there is one')
+    return args.parse_args()

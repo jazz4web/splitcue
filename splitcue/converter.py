@@ -7,6 +7,7 @@ author: jazz4web
 contacts: avm4dev@yandex.ru
 ===================================
 """
+import base64
 import os
 import re
 import shlex
@@ -20,7 +21,156 @@ from . import version
 from .checker import cue_to_seconds
 
 
-class Track:
+class AbsTrack:
+    def _set_enc_part(self, opts):
+        fo = opts or '-8'
+        oo = opts or ''
+        vo = opts or '-q 4'
+        mo = opts or '-V 0'
+        lame = f'-o "cust ext=mp3 lame {mo} --noreplaygain --lowpass -1 - %f"'
+        faac = f'-o "cust ext=m4a faac {oo} -v 0 -X -P -w -o %f -"'
+        encs = {'flac': f'-o "cust ext=flac flac {fo} - -o %f"',
+                'lame': lame,
+                'faac': faac,
+                'oggenc': f'-o "cust ext=ogg oggenc {vo} - -o %f"',
+                'opusenc': f'-o "cust ext=opus opusenc {oo} - %f"'}
+        return encs.get(self.enc)
+
+    def _set_mp3_meta(self, fname, picture=None):
+        song = mp3.MP3(fname)
+        song['TPE1'] = id3.TPE1(encoding=3, text=[self.artist])
+        song['TALB'] = id3.TALB(encoding=3, text=[self.album])
+        if self.genre:
+            song['TCON'] = id3.TCON(encoding=3, text=[self.genre])
+        song['TIT2'] = id3.TIT2(encoding=3, text=[self.title])
+        number = '{0}/{1}'.format(int(self.num), self.total)
+        song['TRCK'] = id3.TRCK(encoding=3, text=[number])
+        if self.date:
+            song['TDRC'] = id3.TDRC(encoding=3, text=[self.date])
+        song['COMM::XXX'] = id3.COMM(
+            encoding=3, lang='XXX', desc='', text=[self.commentary or version])
+        song['APIC'] = id3.APIC(
+            data=picture.data,
+            type=id3.PictureType.COVER_FRONT,
+            desc="cover",
+            mime=picture.mime)
+        song.save(fname)
+
+    def _set_mp4_meta(self, fname, picture=None):
+        song = mp4.MP4(fname)
+        song['\xa9ART'] = [self.artist]
+        song['\xa9alb'] = [self.album]
+        if self.genre:
+            song['\xa9gen'] = [self.genre]
+        song['\xa9nam'] = [self.title]
+        song['trkn'] = [(int(self.num), self.total)]
+        if self.date:
+            song['\xa9day'] = [self.date]
+        song['\xa9cmt'] = [self.commentary or version]
+        if picture:
+            p = mp4.MP4Cover(picture.data)
+            song['covr'] = [p]
+        song.save(fname)
+
+    def _set_vorbis_meta(self, fname, picture=None):
+        act = {'flac': flac.FLAC,
+               'opusenc': oggopus.OggOpus,
+               'oggenc': oggvorbis.OggVorbis,}
+        song = act[self.enc](fname)
+        song['artist'] = self.artist
+        song['album'] = self.album
+        if self.genre:
+            song['genre'] = self.genre
+        song['title'] = self.title
+        song['tracknumber'] = self.num.lstrip('0')
+        song['tracktotal'] = str(self.total)
+        if self.date:
+            song['date'] = self.date
+        song['comment'] = self.commentary or version
+        if picture and (self.enc == 'opusenc' or self.enc == 'oggenc'):
+            p = base64.b64encode(picture.write()).decode('ascii')
+            song['metadata_block_picture'] = p
+        song.save(fname)
+
+
+
+class FlacTrack(AbsTrack):
+    def __init__(self, fname: str, enc: str, odir: str, tracks: int) -> None:
+        self.file = fname
+        self.odir = odir
+        self.album = ''
+        self.date = ''
+        self.genre = ''
+        self.commentary = version
+        self.artist = ''
+        self.title = ''
+        self.num = ''
+        self.total = tracks
+        self.enc = enc
+        self.rfile = ''
+
+    def convert(self, opts):
+        cmd = '{0} {1} "{2}"'.format(
+            self._set_shn_part(),
+            self._set_enc_part(opts),
+            self.file)
+        cmd = shlex.split(cmd)
+        with Popen(cmd) as p:
+            p.communicate()
+        if p.returncode:
+            print('ERROR: somethin bad happened...')
+            sys.exit(1)
+
+    def extract(self, song):
+        if a := song.get('album'):
+            self.album = a[0]
+        if d := song.get('date'):
+            self.date = d[0]
+        if g := song.get('genre'):
+            self.genre = g[0]
+        if c := song.get('comment'):
+            self.commentary = c[0]
+        if ar := song.get('artist'):
+            self.artist = ar[0]
+        if t := song.get('title'):
+            self.title = t[0]
+        if n := song.get('tracknumber'):
+            self.num = '{:0>2}'.format(n[0])
+        if tt := song.get('tracktotal'):
+            self.total = int(tt[0])
+
+    def pprint(self, block):
+        exts = {'lame': '.mp3', 'faac': '.m4a',
+                'opusenc': '.opus', 'oggenc': '.ogg'}
+        name, ext = os.path.splitext(os.path.basename(self.file))
+        self.rfile = os.path.join(self.odir, f'{name}{exts.get(self.enc)}')
+        file = os.path.basename(self.file)
+        rfile = os.path.basename(self.rfile)
+        b = 0
+        if self.enc != 'opusenc':
+            b = 1
+        print('{0:<{2}}  ->  {1}'.format(
+            file, rfile, block - len(file) + b + len(rfile)))
+
+    def write_meta(self, picture=None):
+        methods = {'lame': self._set_mp3_meta,
+                   'faac': self._set_mp4_meta,
+                   'oggenc': self._set_vorbis_meta,
+                   'opusenc': self._set_vorbis_meta}
+        if os.path.exists(self.rfile):
+            try:
+                methods[self.enc](self.rfile, picture=picture)
+            except (OSError, MutagenError):
+                print('ERROR: {0}: metadata cannot be written...'.format(
+                    os.path.basename(self.rfile)))
+        return None
+
+
+    def _set_shn_part(self):
+        return f'shnconv -O always -q -d "{self.odir}"'
+
+
+class Track(AbsTrack):
     def __init__(self, i: int, mdata: dict,) -> None:
         self.total = len(mdata['tracks'])
         self.album = mdata.get('album')
@@ -68,7 +218,7 @@ class Track:
         with Popen(cmd, stdin=PIPE) as p:
             p.communicate(input=points.encode('utf-8'))
         if p.returncode:
-            print('ERROR: something bad happend')
+            print('ERROR: something bad happened...')
             sys.exit(1)
 
     def pprint(self, ablock, tblock):
@@ -117,51 +267,6 @@ class Track:
             return fname
         return None
 
-    def _set_mp3_meta(self, fname):
-        song = mp3.MP3(fname)
-        song['TPE1'] = id3.TPE1(encoding=3, text=[self.artist])
-        song['TALB'] = id3.TALB(encoding=3, text=[self.album])
-        if self.genre:
-            song['TCON'] = id3.TCON(encoding=3, text=[self.genre])
-        song['TIT2'] = id3.TIT2(encoding=3, text=[self.title])
-        number = '{0}/{1}'.format(self.num, self.total)
-        song['TRCK'] = id3.TRCK(encoding=3, text=[number])
-        if self.date:
-            song['TDRC'] = id3.TDRC(encoding=3, text=[self.date])
-        song['COMM::XXX'] = id3.COMM(
-            encoding=3, lang='XXX', desc='', text=[self.commentary or version])
-        song.save(fname)
-
-    def _set_mp4_meta(self, fname):
-        song = mp4.MP4(fname)
-        song['\xa9ART'] = [self.artist]
-        song['\xa9alb'] = [self.album]
-        if self.genre:
-            song['\xa9gen'] = [self.genre]
-        song['\xa9nam'] = [self.title]
-        song['trkn'] = [(int(self.num), self.total)]
-        if self.date:
-            song['\xa9day'] = [self.date]
-        song['\xa9cmt'] = [self.commentary or version]
-        song.save(fname)
-
-    def _set_vorbis_meta(self, fname):
-        act = {'flac': flac.FLAC,
-               'opusenc': oggopus.OggOpus,
-               'oggenc': oggvorbis.OggVorbis,}
-        song = act[self.enc](fname)
-        song['artist'] = self.artist
-        song['album'] = self.album
-        if self.genre:
-            song['genre'] = self.genre
-        song['title'] = self.title
-        song['tracknumber'] = self.num
-        song['tracktotal'] = str(self.total)
-        if self.date:
-            song['date'] = self.date
-        song['comment'] = self.commentary or version
-        song.save(fname)
-
     def _set_x(self, gaps):
         if gaps == 'split':
             if self.first and self.index1 == 0.0:
@@ -177,20 +282,6 @@ class Track:
         if x > 1:
             c -= 1
         return f'shnsplit -O always -q -c {c} -x {x} -a "" -z ""'
-
-    def _set_enc_part(self, opts):
-        fo = opts or '-8'
-        oo = opts or ''
-        vo = opts or '-q 4'
-        mo = opts or '-V 0'
-        lame = f'-o "cust ext=mp3 lame {mo} --noreplaygain --lowpass -1 - %f"'
-        faac = f'-o "cust ext=m4a faac {oo} -v 0 -X -P -w -o %f -"'
-        encs = {'flac': f'-o "cust ext=flac flac {fo} - -o %f"',
-                'lame': lame,
-                'faac': faac,
-                'oggenc': f'-o "cust ext=ogg oggenc {vo} - -o %f"',
-                'opusenc': f'-o "cust ext=opus opusenc {oo} - %f"'}
-        return encs.get(self.enc)
 
     def _set_points(self, gaps):
         if gaps == 'split':
