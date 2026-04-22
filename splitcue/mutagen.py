@@ -31,5 +31,7 @@ def extract_cue_sheet(res):
         if s[0].startswith('\ufeff'):
             s[0] = s[0][1:]
         res['content'] = tuple(s)
+        if image.pictures:
+            res['cover'] = image.pictures[0]
         return True, None
     return None, 'flac file does not contain cue sheet tag...'

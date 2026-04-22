@@ -55,6 +55,9 @@ for i in range(len(meta['tracks'])):
     else:
         t.convert(
             args.gaps, args.enc_opts, meta.get('ablock'), meta.get('tblock'))
-        fname = t.write_meta()
+        if args.picture:
+            fname = t.write_meta(picture=meta.get('cover'))
+        else:
+            fname = t.write_meta()
         if fname and args.rename:
             t.rename(fname)

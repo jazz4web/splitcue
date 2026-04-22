@@ -58,6 +58,12 @@ def parse_args(version, flac=False):
         dest='show',
         default=False,
         help='just print a report, no splitting')
+    args.add_argument(
+        '-p',
+        action='store_true',
+        dest='picture',
+        default=False,
+        help='get the picture if there is one')
     if not flac:
         args.add_argument(
             'cue_file', action='store', help='the cuesheet file name')

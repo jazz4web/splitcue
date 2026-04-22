@@ -88,9 +88,12 @@ class AbsTrack:
         if self.date:
             song['date'] = self.date
         song['comment'] = self.commentary or version
-        if picture and (self.enc == 'opusenc' or self.enc == 'oggenc'):
-            p = base64.b64encode(picture.write()).decode('ascii')
-            song['metadata_block_picture'] = p
+        if picture:
+            if self.enc == 'opusenc' or self.enc == 'oggenc':
+                p = base64.b64encode(picture.write()).decode('ascii')
+                song['metadata_block_picture'] = p
+            else:
+                song.add_picture(picture)
         song.save(fname)
 
 
@@ -251,7 +254,7 @@ class Track(AbsTrack):
             l = cue_to_seconds(p[1]) - cue_to_seconds(p[0])
         self.length = self.seconds_to_string(l)
 
-    def write_meta(self):
+    def write_meta(self, picture=None):
         exts = {'flac': '.flac', 'lame': '.mp3', 'faac': '.m4a',
                 'opusenc': '.opus', 'oggenc': '.ogg'}
         methods = {'flac': self._set_vorbis_meta,
@@ -262,7 +265,7 @@ class Track(AbsTrack):
         fname = f'{self.num}{exts.get(self.enc)}'
         if os.path.exists(fname):
             try:
-                methods[self.enc](fname)
+                methods[self.enc](fname, picture=picture)
             except (OSError, MutagenError):
                 print(f'ERROR: {fname}: metadata cannot be written...')
             return fname
