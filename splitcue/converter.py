@@ -49,11 +49,12 @@ class AbsTrack:
             song['TDRC'] = id3.TDRC(encoding=3, text=[self.date])
         song['COMM::XXX'] = id3.COMM(
             encoding=3, lang='XXX', desc='', text=[self.commentary or version])
-        song['APIC'] = id3.APIC(
-            data=picture.data,
-            type=id3.PictureType.COVER_FRONT,
-            desc="cover",
-            mime=picture.mime)
+        if picture:
+            song['APIC'] = id3.APIC(
+                data=picture.data,
+                type=id3.PictureType.COVER_FRONT,
+                desc="cover",
+                mime=picture.mime)
         song.save(fname)
 
     def _set_mp4_meta(self, fname, picture=None):
