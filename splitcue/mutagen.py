@@ -15,6 +15,23 @@ from mutagen import flac, id3, mp3, mp4, oggopus, oggvorbis, MutagenError
 from . import version
 
 
+def get_cover(directory, res=None):
+    for each in ('cover.jpg', 'folder.jpg'):
+        f = os.path.join(directory, each)
+        if os.path.exists(f):
+            with open(f, 'rb') as pic:
+                picture = flac.Picture()
+                picture.data = pic.read()
+                picture.type = id3.PictureType.COVER_FRONT
+                picture.desc = 'cover front'
+                picture.mime = 'image/jpeg'
+                if res:
+                    res['cover'] = picture
+                    return None
+                else:
+                    return picture
+
+
 class AbsMutagen:
     def _set_mp3_meta(self, fname, picture=None):
         song = mp3.MP3(fname)

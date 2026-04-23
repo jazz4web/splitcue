@@ -18,7 +18,7 @@ import sys
 from splitcue import version
 from splitcue.converter import FlacTrack
 from splitcue.main import parse_cargs
-from splitcue.mutagen import get_mdata
+from splitcue.mutagen import get_cover, get_mdata
 from splitcue.parser import define_enc
 from splitcue.system import check_dep
 
@@ -46,6 +46,9 @@ elif len(files) > 99:
     print('ERROR: more than 99 tracks at one go...')
     sys.exit(1)
 block = max(len(os.path.basename(file)) for file in files)
+cover = None
+if args.picture:
+    cover = get_cover(os.path.realpath(args.input_dir))
 for each in sorted(files):
     song, error = get_mdata(each)
     if error:
@@ -55,7 +58,9 @@ for each in sorted(files):
     t.pprint(block)
     t.extract(song)
     t.convert(args.enc_opts)
-    if args.picture and song.pictures:
-        t.write_meta(picture=song.pictures[0])
+    if args.picture:
+        if song.pictures:
+            cover = song.pictures[0]
+        t.write_meta(picture=cover)
     else:
         t.write_meta()

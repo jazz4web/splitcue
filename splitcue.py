@@ -11,12 +11,14 @@ contacts: avm4dev@yandex.ru
 """
 
 import importlib.util
+import os
 import sys
 
 from splitcue import version
 from splitcue.checker import check_couple, check_cue, print_report
 from splitcue.converter import Track
 from splitcue.main import parse_args
+from splitcue.mutagen import get_cover
 from splitcue.parser import (
     define_dec, define_enc, extract_metadata,
     find_couple, find_couple_b, get_files, read_file)
@@ -68,6 +70,8 @@ cc = check_couple(meta)
 if not cc[0]:
     print(f'ERROR: {cc[1]}')
     sys.exit(1)
+if args.picture:
+    get_cover(os.path.dirname(meta.get('cue')), meta)
 print_report(meta, Track.seconds_to_string)
 for i in range(len(meta['tracks'])):
     t = Track(i, meta)
@@ -77,6 +81,9 @@ for i in range(len(meta['tracks'])):
     else:
         t.convert(
             args.gaps, args.enc_opts, meta.get('ablock'), meta.get('tblock'))
-        fname = t.write_meta()
+        if args.picture and meta.get('cover'):
+            fname = t.write_meta(picture=meta.get('cover'))
+        else:
+            fname = t.write_meta()
         if fname and args.rename:
             t.rename(fname)

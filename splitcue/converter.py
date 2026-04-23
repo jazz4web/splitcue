@@ -13,6 +13,7 @@ import shlex
 import sys
 
 from subprocess import Popen, PIPE
+from mutagen import MutagenError
 
 from . import version
 from .checker import cue_to_seconds
