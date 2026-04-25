@@ -20,7 +20,7 @@ from splitcue.converter import Track
 from splitcue.main import parse_args
 from splitcue.mutagen import get_cover
 from splitcue.parser import (
-    define_dec, define_enc, extract_metadata,
+    define_dec, define_enc, define_sequence, extract_metadata,
     find_couple, find_couple_b, get_files, read_file)
 from splitcue.system import check_dep, detect_f_type
 
@@ -73,7 +73,7 @@ if not cc[0]:
 if args.picture:
     get_cover(os.path.dirname(meta.get('cue')), meta)
 print_report(meta, Track.seconds_to_string)
-for i in range(len(meta['tracks'])):
+for i in define_sequence(args, meta):
     t = Track(i, meta)
     if args.show:
         t.set_length(t._set_points(args.gaps))

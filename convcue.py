@@ -38,7 +38,10 @@ if importlib.util.find_spec('mutagen') is None:
     print('ERROR: python3-mutagen is not installed...')
     sys.exit(1)
 template = os.path.join(os.path.realpath(args.input_dir), '*.flac')
-files = glob.glob(template)
+files = sorted(glob.glob(template))
+if args.track:
+    files = [item for step, item in enumerate(files, start=1)
+             if step in args.track]
 if len(files) == 0:
     print('ERROR: input directory contains no FLAC files...')
     sys.exit(1)
@@ -49,7 +52,7 @@ block = max(len(os.path.basename(file)) for file in files)
 cover = None
 if args.picture:
     cover = get_cover(os.path.realpath(args.input_dir))
-for each in sorted(files):
+for each in files:
     song, error = get_mdata(each)
     if error:
         print(error)

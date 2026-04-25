@@ -18,7 +18,8 @@ from splitcue.checker import check_couple, check_cue, print_report
 from splitcue.converter import Track
 from splitcue.main import parse_args
 from splitcue.mutagen import extract_cue_sheet
-from splitcue.parser import define_enc, extract_metadata, find_couple_b
+from splitcue.parser import (
+    define_enc, define_sequence, extract_metadata, find_couple_b)
 from splitcue.system import check_dep
 
 args = parse_args(version, flac=True)
@@ -47,7 +48,7 @@ if not ch[0]:
     print(f'ERROR: {ch[1]}')
     sys.exit(1)
 print_report(meta, Track.seconds_to_string)
-for i in range(len(meta['tracks'])):
+for i in define_sequence(args, meta):
     t = Track(i, meta)
     if args.show:
         t.set_length(t._set_points(args.gaps))

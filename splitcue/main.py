@@ -42,10 +42,23 @@ def parse_args(version, flac=False):
         choices=('flac', 'opus', 'vorbis', 'mp3', 'aac'),
         help='the output media type, default is `opus`')
     args.add_argument(
+        '-n', '--nums',
+        action='extend',
+        nargs='+',
+        dest='track',
+        type=int,
+        help='encode just these tracks')
+    args.add_argument(
         '-o', '--opts',
         action='store',
         dest='enc_opts',
         help='control some options while encoding tracks')
+    args.add_argument(
+        '-p',
+        action='store_true',
+        dest='picture',
+        default=False,
+        help='get the picture if there is one')
     args.add_argument(
         '-r', '--rename',
         action='store_true',
@@ -58,12 +71,6 @@ def parse_args(version, flac=False):
         dest='show',
         default=False,
         help='just print a report, no splitting')
-    args.add_argument(
-        '-p',
-        action='store_true',
-        dest='picture',
-        default=False,
-        help='get the picture if there is one')
     if not flac:
         args.add_argument(
             'cue_file', action='store', help='the cuesheet file name')
@@ -81,17 +88,17 @@ def parse_cargs(version):
     args.add_argument(
         '-v', '--version', action='version', version=version)
     args.add_argument(
-        '-i',
-        action='store',
-        dest='input_dir',
-        required=True,
-        help='input directory')
-    args.add_argument(
         '-d',
         action='store',
         dest='output_dir',
         required=True,
         help='output directory')
+    args.add_argument(
+        '-i',
+        action='store',
+        dest='input_dir',
+        required=True,
+        help='input directory')
     args.add_argument(
         '-m', '--mode',
         action='store',
@@ -99,6 +106,13 @@ def parse_cargs(version):
         default='opus',
         choices=('opus', 'vorbis', 'mp3', 'aac'),
         help='the output media type, default is `opus`')
+    args.add_argument(
+        '-n', '--nums',
+        action='extend',
+        nargs='+',
+        dest='track',
+        type=int,
+        help='encode just these tracks')
     args.add_argument(
         '-o', '--opts',
         action='store',

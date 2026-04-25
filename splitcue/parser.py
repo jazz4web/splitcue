@@ -14,6 +14,13 @@ import re
 from chardet import detect
 
 
+def define_sequence(args, res):
+    if args.track:
+        return [i - 1 for i in sorted(args.track)
+                    if 0 < i <= len(res['tracks'])]
+    return range(len(res['tracks']))
+
+
 def extract_metadata(res):
     res['album performer'] = get_value(res['content'], r'^PERFORMER +(.+)')
     res['album'] = get_value(res['content'], r'^TITLE +(.+)')
